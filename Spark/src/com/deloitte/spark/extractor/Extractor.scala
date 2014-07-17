@@ -29,11 +29,11 @@ object Extractor {
 
     val textFile = sc.textFile("input.txt").map(line => line.split(" ")).map(line => (line(0), (line(3), line(6)))).groupByKey
 
-    var timeOnPageSec = 0L
+    var timeOnPageSec: BigInt = 0
 
     var noOfPagesPerSession = 0
 
-    var totalTimeOnSite = 0L
+    var totalTimeOnSite: BigInt = 0
 
     var arrRemFields: ListBuffer[Tuple4[String, String, Long, Int]] = ListBuffer()
     for ((ipAddress, seqData) <- textFile) {
