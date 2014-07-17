@@ -1,6 +1,7 @@
 package com.deloitte.storm.rdbms;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,15 +31,25 @@ public class RDBMSDumperBolt  implements IBasicBolt {
         this.tableName = tableName;
         this.fieldNames = columnNames;
         
-        try {
-            con = connector.getConnection();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        communicator = new RDBMSCommunicator(con);
+     
     }
     @Override
     public void execute(Tuple input, BasicOutputCollector collector) {
+    	
+    	
+    	   try {
+               //con = connector.getConnection();
+           	 String dbClass = "org.apache.phoenix.jdbc.PhoenixDriver";
+                Class.forName("org.apache.phoenix.jdbc.PhoenixDriver");
+                con = DriverManager.getConnection ("jdbc:phoenix:localhost");
+           } catch (ClassNotFoundException | SQLException e) {
+               e.printStackTrace();
+           }
+           communicator = new RDBMSCommunicator(con);
+           
+           
+           
+           
         keySet = null;
         fieldValues = new ArrayList<Object>();
         System.out.println(input.toString());
@@ -50,6 +61,9 @@ public class RDBMSDumperBolt  implements IBasicBolt {
         //list = (List<String>) input.select(arg0)
         try {
             communicator.insertRow(this.tableName, fieldNames, fieldValues);
+            
+    			con.close();
+    		
         } catch (SQLException e) {
             System.out.println("Exception occurred in adding a row ");
             e.printStackTrace();
@@ -66,11 +80,6 @@ public class RDBMSDumperBolt  implements IBasicBolt {
     @Override
     public void cleanup() {
     	
-    	try {
-			con.close();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    	
     }
 }

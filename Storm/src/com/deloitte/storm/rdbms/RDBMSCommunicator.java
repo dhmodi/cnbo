@@ -1,11 +1,13 @@
 package com.deloitte.storm.rdbms;
 
 
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 /*
@@ -29,7 +31,9 @@ public class RDBMSCommunicator {
             queryValues = "";
             noOfColumns = fieldNames.size();           
             queryStmt = "upsert into " + tableName + "(event_id, ";
-            queryValues = queryValues + "NEXT VALUE FOR temp_schema.my_sequence, ";
+            
+            Long timestamp = new Date().getTime();
+            queryValues = queryValues + timestamp + ", ";
             for (int i = 0; i <= noOfColumns - 1; i++) {
             	
                 if (i != noOfColumns - 1) {
@@ -48,7 +52,7 @@ public class RDBMSCommunicator {
                 }
             }
             queryStmt = queryStmt + " values(" +  queryValues + ")";
-            System.out.println(queryStmt);
+            //System.out.println(queryStmt);
             prepstmt = con.prepareStatement(queryStmt);
             
             
@@ -57,7 +61,7 @@ public class RDBMSCommunicator {
                 prepstmt.setObject(j + 1, fieldValues.get(j));
                
             }
-            System.out.println(prepstmt.toString());
+            //System.out.println(prepstmt.toString());
             result = prepstmt.executeUpdate();
             if (result != 0) {
             	con.commit();
@@ -74,7 +78,7 @@ public class RDBMSCommunicator {
         tableDetails = new HashMap<String, String>();
         try {
         String stmt = "select column_name, data_type, character_maximum_length from information_schema.columns where table_name = '" + tableName + "'";
-        System.out.println(stmt);
+        //System.out.println(stmt);
         PreparedStatement prepstmt = null;
         prepstmt = con.prepareStatement(stmt);
         rs = prepstmt.executeQuery();
