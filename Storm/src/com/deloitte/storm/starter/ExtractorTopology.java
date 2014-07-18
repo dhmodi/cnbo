@@ -14,6 +14,16 @@ import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.topology.TopologyBuilder;
 
 import com.deloitte.storm.bolt.CleanEventBolt;
+import com.deloitte.storm.bolt.HdfsBolt;
+import com.deloitte.storm.bolt.format.DefaultFileNameFormat;
+import com.deloitte.storm.bolt.format.DelimitedRecordFormat;
+import com.deloitte.storm.bolt.format.FileNameFormat;
+import com.deloitte.storm.bolt.format.RecordFormat;
+import com.deloitte.storm.bolt.rotation.FileRotationPolicy;
+import com.deloitte.storm.bolt.rotation.FileSizeRotationPolicy;
+import com.deloitte.storm.bolt.rotation.FileSizeRotationPolicy.Units;
+import com.deloitte.storm.bolt.sync.CountSyncPolicy;
+import com.deloitte.storm.bolt.sync.SyncPolicy;
 import com.deloitte.storm.rdbms.RDBMSDumperBolt;
 
 /**
@@ -26,7 +36,7 @@ public class ExtractorTopology {
 		List<String> hosts = new ArrayList<String>();
 		// BrokerHosts brokerHosts = new ZkHosts("localhost");
 		SpoutConfig kafkaConf = new SpoutConfig(new ZkHosts("localhost",
-				"/brokers"), "SimpleEvent", "/tmp", "1");
+				"/brokers"), "newSimpleEvent", "/tmp", "1");
 		// SpoutConfig kafkaConf = new SpoutConfig(brokerHosts, "test",
 		// "/kafkastorm", "discovery");
 		kafkaConf.scheme = new SchemeAsMultiScheme(new StringScheme());
@@ -57,19 +67,40 @@ public class ExtractorTopology {
 		columnNames.add("eventtime");
 		columnNames.add("visitedurl");
 
-		
+		// use "|" instead of "," for field delimiter
+		RecordFormat format = new DelimitedRecordFormat()
+		        .withFieldDelimiter("|");
+
+		// sync the filesystem after every 1k tuples
+		SyncPolicy syncPolicy = new CountSyncPolicy(1000);
+
+		// rotate files when they reach 5MB
+		FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(5.0f, Units.MB);
+
+		FileNameFormat fileNameFormat = new DefaultFileNameFormat()
+		        .withPath("/user/cloudera/foo/new");
+
+		HdfsBolt bolt = new HdfsBolt()
+		        .withFsUrl("hdfs://localhost:8020")
+		        .withFileNameFormat(fileNameFormat)
+		        .withRecordFormat(format)
+		        .withRotationPolicy(rotationPolicy)
+		        .withSyncPolicy(syncPolicy);
 		
 		
 		// add dumper bolt to the builder
 
-		builder.setBolt("split", new CleanEventBolt(), 20).shuffleGrouping(
+		//builder.setBolt("split", new CleanEventBolt(), 20).shuffleGrouping(
+			//	"spout");
+		
+		builder.setBolt("hdfs", bolt, 10).shuffleGrouping(
 				"spout");
 		// builder.setBolt("count", new WordCount(), 12).fieldsGrouping("split",
 		// new Fields("word"));
 
 		// add dumper bolt to the builder
-		RDBMSDumperBolt dumperBolt = new RDBMSDumperBolt(tableName, columnNames);
-		builder.setBolt("dumperBolt", dumperBolt, 20).noneGrouping("split");
+//		RDBMSDumperBolt dumperBolt = new RDBMSDumperBolt(tableName, columnNames);
+//		builder.setBolt("dumperBolt", dumperBolt, 20).noneGrouping("split");
 
 		Config conf = new Config();
 		//conf.setDebug(true);
