@@ -18,7 +18,7 @@ public class KafkaProducer  {
 		Process p;
 		Properties props = new Properties();
 		String line = "";
-		// Random rnd = new Random();
+
 		String msg = "";
 		String num = "1";
 
