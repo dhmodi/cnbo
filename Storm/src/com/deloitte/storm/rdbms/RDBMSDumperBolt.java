@@ -42,9 +42,12 @@ public class RDBMSDumperBolt  implements IBasicBolt {
            	 String dbClass = "org.apache.phoenix.jdbc.PhoenixDriver";
                 Class.forName("org.apache.phoenix.jdbc.PhoenixDriver");
                 con = DriverManager.getConnection ("jdbc:phoenix:localhost");
-           } catch (ClassNotFoundException | SQLException e) {
+           } catch (ClassNotFoundException e) {
                e.printStackTrace();
-           }
+           } catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
            communicator = new RDBMSCommunicator(con);
            
            

@@ -35,7 +35,7 @@ public class ExtractorTopology {
 	public static void main(String[] args) throws Exception {
 		List<String> hosts = new ArrayList<String>();
 		// BrokerHosts brokerHosts = new ZkHosts("localhost");
-		SpoutConfig kafkaConf = new SpoutConfig(new ZkHosts("localhost",
+		SpoutConfig kafkaConf = new SpoutConfig(new ZkHosts("10.118.18.203",
 				"/brokers"), "newSimpleEvent", "/tmp", "1");
 		// SpoutConfig kafkaConf = new SpoutConfig(brokerHosts, "test",
 		// "/kafkastorm", "discovery");
@@ -44,7 +44,7 @@ public class ExtractorTopology {
 
 		kafkaConf.zkServers = new ArrayList<String>() {
 			{
-				add("localhost");
+				add("10.118.18.203");
 			}
 		};
 		kafkaConf.zkPort = 2181;
@@ -78,10 +78,10 @@ public class ExtractorTopology {
 		FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(5.0f, Units.MB);
 
 		FileNameFormat fileNameFormat = new DefaultFileNameFormat()
-		        .withPath("/user/cloudera/foo/new");
+		        .withPath("/user/dhmodi/webserver_logs");
 
 		HdfsBolt bolt = new HdfsBolt()
-		        .withFsUrl("hdfs://localhost:8020")
+		        .withFsUrl("hdfs://ussltcsnl2267.solutions.glbsnet.com:8020")
 		        .withFileNameFormat(fileNameFormat)
 		        .withRecordFormat(format)
 		        .withRotationPolicy(rotationPolicy)
@@ -113,10 +113,14 @@ public class ExtractorTopology {
 		} else {
 			conf.setMaxTaskParallelism(3);
 
-			LocalCluster cluster = new LocalCluster();
-			cluster.submitTopology("hbase-word-count", conf,
-					builder.createTopology());
-
+	///////////// To Start local Cluster /////////////////////////
+		//	LocalCluster cluster = new LocalCluster();
+			//cluster.submitTopology("hbase-word-count", conf,
+				//	builder.createTopology());
+	///////////// To Start local Cluster ////////////////////////
+			
+			
+			
 			// Thread.sleep(10000);
 
 			// cluster.shutdown();
