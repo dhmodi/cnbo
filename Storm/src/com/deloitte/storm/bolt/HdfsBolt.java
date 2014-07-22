@@ -97,11 +97,11 @@ public class HdfsBolt extends AbstractHdfsBolt{
                 this.offset += bytes.length;
 
                 if (this.syncPolicy.mark(tuple, this.offset)) {
-                    if (this.out instanceof HdfsDataOutputStream) {
-                        ((HdfsDataOutputStream) this.out).hsync(EnumSet.of(SyncFlag.UPDATE_LENGTH));
-                    } else {
+//                    if (this.out instanceof HdfsDataOutputStream) {
+//                        ((HdfsDataOutputStream) this.out).hsync(EnumSet.of(SyncFlag.UPDATE_LENGTH));
+//                    } else {
                         this.out.hsync();
-                    }
+//                     }
                     this.syncPolicy.reset();
                 }
             }

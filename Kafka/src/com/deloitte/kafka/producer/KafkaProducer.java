@@ -34,6 +34,7 @@ public class KafkaProducer  {
 						.getProperty(ProducerConstant.INPUT_FILE_NAME);
 		String Broker_List = properties
 				.getProperty(ProducerConstant.BROKER_LIST);
+		//System.out.println(Broker_List);
 		String Serializer_type = properties
 				.getProperty(ProducerConstant.SERIALIZER_TYPE);
 		String Num_Of_Ack = properties
@@ -59,6 +60,7 @@ public class KafkaProducer  {
 				msg = line + "\n";
 				KeyedMessage<String, String> data = new KeyedMessage<String, String>(
 						Topic_To_Write, num, msg);
+				//System.out.println("Dhaval");
 				producer.send(data);
 
 			}

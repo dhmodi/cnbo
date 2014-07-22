@@ -75,7 +75,7 @@ public class ExtractorTopology {
 		SyncPolicy syncPolicy = new CountSyncPolicy(1000);
 
 		// rotate files when they reach 5MB
-		FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(5.0f, Units.MB);
+		FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(1.0f, Units.MB);
 
 		FileNameFormat fileNameFormat = new DefaultFileNameFormat()
 		        .withPath("/user/dhmodi/webserver_logs");
@@ -103,7 +103,7 @@ public class ExtractorTopology {
 //		builder.setBolt("dumperBolt", dumperBolt, 20).noneGrouping("split");
 
 		Config conf = new Config();
-		//conf.setDebug(true);
+		conf.setDebug(true);
 
 		if (args != null && args.length > 0) {
 			conf.setNumWorkers(3);
@@ -114,9 +114,9 @@ public class ExtractorTopology {
 			conf.setMaxTaskParallelism(3);
 
 	///////////// To Start local Cluster /////////////////////////
-		//	LocalCluster cluster = new LocalCluster();
-			//cluster.submitTopology("hbase-word-count", conf,
-				//	builder.createTopology());
+//			LocalCluster cluster = new LocalCluster();
+//			cluster.submitTopology("hbase-word-count", conf,
+//					builder.createTopology());
 	///////////// To Start local Cluster ////////////////////////
 			
 			
