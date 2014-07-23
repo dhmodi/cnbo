@@ -25,10 +25,29 @@ public interface ApplicationConstants {
 	public static final String KAFKA_SPOUT = "kafka_spout";
 	public static final String LOG_VALIDATOR = "log_validator";
 	public static final String REC_EXTRACTOR = "rec_extractor";
-	
+	public static final String HDFS_BOLT = "hdfs_bolt";
+	public static final String TOPOLOGY_NAME = "hbase-word-count";
 	//Constants for DB
 	public static final String DB_DRIVER_CLASS = "db.driver.classname";
 	public static final String DB_USER_NAME = "db.username";
 	public static final String DB_PASSWORD = "db.password";
 	public static final String DB_CONNECTION_URL = "db.connection.url";
+	
+	//Constants for HDFS
+	public static final String REC_FMT_DELIM = "hdfs.record.format.delimeter";
+	public static final String SYNC_POL_COUNT = "hdfs.sync.policy.count";
+	public static final String FILE_SIZE_ROT_POL = "hdfs.file.size.rotation.policy";
+	public static final String FILE_NAME_FORMAT = "hdfs.file.name.format";
+	public static final String HDFS_URL = "hdfs.url";
+	
+	//Constants for Application Config
+	public static final String APP_MODE = "app.mode";
+	public static final String DEBUG = "DEBUG";
+	
+	//Constants for different fields of log file
+	public static final String INDEX_IPADDRESS = "log.cont.gr.IPADDRESS";
+	public static final String INDEX_USERNAME = "log.cont.gr.USERNAME";
+	public static final String INDEX_VISITDATE = "log.cont.gr.VISITDATE";
+	public static final String INDEX_PAGEURL = "log.cont.gr.PAGEURL";
+	
 }

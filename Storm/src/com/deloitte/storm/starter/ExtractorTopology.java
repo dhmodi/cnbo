@@ -1,7 +1,8 @@
 package com.deloitte.storm.starter;
 
+import java.io.FileInputStream;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Properties;
 
 import storm.kafka.KafkaSpout;
 import storm.kafka.SpoutConfig;
@@ -13,8 +14,9 @@ import backtype.storm.StormSubmitter;
 import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.topology.TopologyBuilder;
 
-import com.deloitte.storm.bolt.CleanEventBolt;
 import com.deloitte.storm.bolt.HdfsBolt;
+import com.deloitte.storm.bolt.LogValidatorBolt;
+import com.deloitte.storm.bolt.RecordExtractorBolt;
 import com.deloitte.storm.bolt.format.DefaultFileNameFormat;
 import com.deloitte.storm.bolt.format.DelimitedRecordFormat;
 import com.deloitte.storm.bolt.format.FileNameFormat;
@@ -24,7 +26,7 @@ import com.deloitte.storm.bolt.rotation.FileSizeRotationPolicy;
 import com.deloitte.storm.bolt.rotation.FileSizeRotationPolicy.Units;
 import com.deloitte.storm.bolt.sync.CountSyncPolicy;
 import com.deloitte.storm.bolt.sync.SyncPolicy;
-import com.deloitte.storm.rdbms.RDBMSDumperBolt;
+import com.deloitte.util.ApplicationConstants;
 
 /**
  * This topology demonstrates Storm's stream groupings and multilang
@@ -33,96 +35,76 @@ import com.deloitte.storm.rdbms.RDBMSDumperBolt;
 public class ExtractorTopology {
 
 	public static void main(String[] args) throws Exception {
-		List<String> hosts = new ArrayList<String>();
-		// BrokerHosts brokerHosts = new ZkHosts("localhost");
-		SpoutConfig kafkaConf = new SpoutConfig(new ZkHosts("10.118.18.203",
-				"/brokers"), "newSimpleEvent", "/tmp", "1");
-		// SpoutConfig kafkaConf = new SpoutConfig(brokerHosts, "test",
-		// "/kafkastorm", "discovery");
-		kafkaConf.scheme = new SchemeAsMultiScheme(new StringScheme());
-		// kafkaConf.forceStartOffsetTime(-2);
-
-		kafkaConf.zkServers = new ArrayList<String>() {
-			{
-				add("10.118.18.203");
-			}
-		};
-		kafkaConf.zkPort = 2181;
-		KafkaSpout kafkaSpout = new KafkaSpout(kafkaConf);
-		kafkaConf.forceFromStart = true;
 		
+		//Reading application configs from properties file
+		Properties appProperties = new Properties();
+		appProperties.load(new FileInputStream(ApplicationConstants.APP_RECOURCE));
 		
+		//Configuring KafkaSpout with a Kafka topic and instantiating it 
+		ZkHosts zkHosts = new ZkHosts(appProperties.getProperty(ApplicationConstants.ZK_HOST));
+		SpoutConfig spoutConfig = new SpoutConfig(
+				zkHosts, 
+				appProperties.getProperty(ApplicationConstants.ZK_TOPIC), 
+				appProperties.getProperty(ApplicationConstants.ZK_ROOT), 
+				appProperties.getProperty(ApplicationConstants.ZK_ID));
+		spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+		spoutConfig.forceFromStart = true;	//Forcefully starting from the beginning of the kafka topic 
+		KafkaSpout kafkaSpout = new KafkaSpout(spoutConfig);
+		
+		//Configuring HdfsBolt
 		ArrayList<String> columnNames = new ArrayList<String>();
-		String tableName = "Raw_event";
-
-		TopologyBuilder builder = new TopologyBuilder();
-
-		// builder.setSpout("spout", new RandomSentenceSpout(), 10);
-		builder.setSpout("spout", kafkaSpout, 10);
-
-		// columnNames.add("event_id");
 		columnNames.add("ipaddress");
 		columnNames.add("username");
 		columnNames.add("eventdate");
 		columnNames.add("eventtime");
 		columnNames.add("visitedurl");
+		String tableName = "Raw_event";
 
 		// use "|" instead of "," for field delimiter
 		RecordFormat format = new DelimitedRecordFormat()
-		        .withFieldDelimiter("|");
-
-		// sync the filesystem after every 1k tuples
-		SyncPolicy syncPolicy = new CountSyncPolicy(1000);
-
+		        .withFieldDelimiter(appProperties.getProperty(ApplicationConstants.REC_FMT_DELIM));
+		// sync the file system after every 1k tuples
+		SyncPolicy syncPolicy = new CountSyncPolicy(
+				Integer.parseInt(appProperties.getProperty(ApplicationConstants.SYNC_POL_COUNT)));
 		// rotate files when they reach 5MB
-		FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(1.0f, Units.MB);
-
+		FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(
+				Float.parseFloat(appProperties.getProperty(ApplicationConstants.FILE_SIZE_ROT_POL)), 
+				Units.MB);
 		FileNameFormat fileNameFormat = new DefaultFileNameFormat()
-		        .withPath("/user/dhmodi/webserver_logs");
-
-		HdfsBolt bolt = new HdfsBolt()
-		        .withFsUrl("hdfs://ussltcsnl2267.solutions.glbsnet.com:8020")
+		        .withPath(appProperties.getProperty(ApplicationConstants.FILE_NAME_FORMAT));
+		HdfsBolt hdfsBolt = new HdfsBolt()
+		        .withFsUrl(appProperties.getProperty(ApplicationConstants.HDFS_URL))
 		        .withFileNameFormat(fileNameFormat)
 		        .withRecordFormat(format)
 		        .withRotationPolicy(rotationPolicy)
 		        .withSyncPolicy(syncPolicy);
-		
-		
-		// add dumper bolt to the builder
 
-		//builder.setBolt("split", new CleanEventBolt(), 20).shuffleGrouping(
-			//	"spout");
+		//Configuring and instantiating TopologyBuilder
+		TopologyBuilder topologyBuilder = new TopologyBuilder();
+		topologyBuilder.setSpout(ApplicationConstants.KAFKA_SPOUT, kafkaSpout);
 		
-		builder.setBolt("hdfs", bolt, 10).shuffleGrouping(
-				"spout");
-		// builder.setBolt("count", new WordCount(), 12).fieldsGrouping("split",
-		// new Fields("word"));
+		topologyBuilder.setBolt(ApplicationConstants.LOG_VALIDATOR, new LogValidatorBolt()).shuffleGrouping(ApplicationConstants.KAFKA_SPOUT);
+		topologyBuilder.setBolt(ApplicationConstants.REC_EXTRACTOR, new RecordExtractorBolt()).shuffleGrouping(ApplicationConstants.LOG_VALIDATOR);
 
-		// add dumper bolt to the builder
-//		RDBMSDumperBolt dumperBolt = new RDBMSDumperBolt(tableName, columnNames);
-//		builder.setBolt("dumperBolt", dumperBolt, 20).noneGrouping("split");
+		topologyBuilder.setBolt(ApplicationConstants.HDFS_BOLT, hdfsBolt).shuffleGrouping(ApplicationConstants.KAFKA_SPOUT);
 
 		Config conf = new Config();
-		conf.setDebug(true);
+		if(appProperties.getProperty(ApplicationConstants.APP_MODE)
+				.equalsIgnoreCase(ApplicationConstants.DEBUG)) {
+			conf.setDebug(true);
+		}
 
 		if (args != null && args.length > 0) {
 			conf.setNumWorkers(3);
-
 			StormSubmitter.submitTopology(args[0], conf,
-					builder.createTopology());
+					topologyBuilder.createTopology());
 		} else {
 			conf.setMaxTaskParallelism(3);
+			LocalCluster cluster = new LocalCluster();
+			cluster.submitTopology(ApplicationConstants.TOPOLOGY_NAME, conf,
+					topologyBuilder.createTopology());
 
-	///////////// To Start local Cluster /////////////////////////
-//			LocalCluster cluster = new LocalCluster();
-//			cluster.submitTopology("hbase-word-count", conf,
-//					builder.createTopology());
-	///////////// To Start local Cluster ////////////////////////
-			
-			
-			
 			// Thread.sleep(10000);
-
 			// cluster.shutdown();
 		}
 	}

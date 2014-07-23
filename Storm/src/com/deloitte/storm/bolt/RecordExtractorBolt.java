@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -29,12 +28,13 @@ public class RecordExtractorBolt implements IRichBolt {
 	private DataSource dataSource;
 	private PreparedStatement preparedStatement;
 	private int recCounter = 0;
+	Properties appProperties;
 	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
 		try {
-			Properties appProperties = new Properties();
+			appProperties = new Properties();
 			appProperties.load(new FileInputStream(ApplicationConstants.APP_RECOURCE));
 			dataSource = DataSource.getInstance(appProperties);
 			connection = dataSource.getConnection();
@@ -65,14 +65,17 @@ public class RecordExtractorBolt implements IRichBolt {
 		try {
 			String log = input.getString(0);
 			Matcher matcher = logPattern.matcher(log);
-			Map<String, String> map = new HashMap<String, String>();
 			while (matcher.find()) {
-				preparedStatement.setString(1, matcher.group(1).trim());
-				preparedStatement.setString(2, matcher.group(3).trim());
-				String dateTime = matcher.group(4).trim();
+				preparedStatement.setString(1, matcher.group(
+						Integer.parseInt(appProperties.getProperty(ApplicationConstants.INDEX_IPADDRESS).trim())));
+				preparedStatement.setString(2, matcher.group(
+						Integer.parseInt(appProperties.getProperty(ApplicationConstants.INDEX_USERNAME).trim())));
+				String dateTime = matcher.group(
+						Integer.parseInt(appProperties.getProperty(ApplicationConstants.INDEX_VISITDATE).trim()));
 				dateTime = matcher.group(4).trim().replace("[", "").replace("]", "");
 				preparedStatement.setString(3, dateTime);
-				preparedStatement.setString(4, matcher.group(6).trim());
+				preparedStatement.setString(4, matcher.group(
+						Integer.parseInt(appProperties.getProperty(ApplicationConstants.INDEX_PAGEURL).trim())));
 			}
 			preparedStatement.addBatch();
 			if(++recCounter % 1000 == 0) {
@@ -95,7 +98,7 @@ public class RecordExtractorBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-//		declarer.declare(new Fields("Interpreter15Min"));
+		//Last bolt
 	}
 
 	public Map<String, Object> getComponentConfiguration() {
