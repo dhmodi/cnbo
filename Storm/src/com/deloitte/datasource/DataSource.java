@@ -6,7 +6,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.commons.dbcp2.BasicDataSource;
+
 
 import com.deloitte.util.ApplicationConstants;
 
@@ -23,7 +24,7 @@ public class DataSource {
         dataSource.setUrl(dbConfig.getProperty(ApplicationConstants.DB_CONNECTION_URL));
        
         dataSource.setInitialSize(10);
-        dataSource.setMaxActive(10);
+        dataSource.setMaxTotal(10);
         dataSource.setMinIdle(5);
         dataSource.setMaxIdle(20);
         dataSource.setMaxOpenPreparedStatements(180);
